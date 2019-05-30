@@ -32,7 +32,7 @@ Lastly, try it out:
 ```
 ./tgnoti.py "Hello World!"
 ```
-This should send messages to all registered chats.
+This should send messages to all registered chats. You can send messages without ringing notification with the `--mute` flag.
 
 Optionally: Add convenient shell bindings (e.g. to your .zshrc):
 ```
