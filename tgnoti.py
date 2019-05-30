@@ -75,13 +75,14 @@ class TGNotifier:
         payload = {
                 'chat_id': chat_id,
                 'text': msg,
-                'disable_notification': True,
+                'parse_mode': 'markdown',
+                'disable_notification': notify,
             }
         self.post("sendMessage", data=payload)
 
     def send_host_msg(self, chat_id, msg, notify=True):
         hostname = socket.gethostname()
-        new_msg = '"{msg}" from {hostname}'.format(msg=msg, hostname=hostname)
+        new_msg = '{msg}\n_from_ `{hostname}`'.format(msg=msg, hostname=hostname)
         self.send_msg(chat_id, new_msg, notify)
 
     def broadcast_host(self, msg, notify=False):
@@ -181,7 +182,7 @@ def main():
                 .format(config_file_path), file=sys.stderr)
         exit(0)
 
-    msg = " ".join(args.msg)
+    msg = "\n".join(args.msg)
     tgn.broadcast_host(msg, notify=(not args.mute))
 
 
