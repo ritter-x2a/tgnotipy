@@ -7,6 +7,11 @@ This project provides you with the tools to avoid repeatedly logging into the ma
 
 ## Prerequesits
 You need to have a [Telegram](https://telegram.org/) account as well as an [API key for a chat bot](https://core.telegram.org/bots#3-how-do-i-create-a-bot) (from now on referenced as `<API_KEY>`).
+Also, you need to install the required modules, that is `requests` (for convenient http interaction) and `pyxdg` (for finding a place for the config file, strictly speeking not necessary if you always provide the `--config <CFG>` argument). This can be done as follows via pip:
+```
+pip install -r requirements.txt
+```
+
 
 ## Setup
 First, create a config file for your API key on your system:
