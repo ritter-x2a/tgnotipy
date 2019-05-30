@@ -146,6 +146,10 @@ def main():
                     help='create a new config with this telegram bot api key')
     parser.add_argument('-f', '--find', action='store_true',
                     help='instead of giving a notification, search and add recent chats')
+    parser.add_argument('--clear', action='store_true',
+                    help='instead of giving a notification, clear the list of registered chats')
+    parser.add_argument('--chats', action='store_true',
+                    help='instead of giving a notification, print the list of registered chats')
     parser.add_argument('-m', '--mute', action='store_true',
                     help='give a muted notification')
     args = parser.parse_args()
@@ -181,6 +185,22 @@ def main():
         print("Updated chats were written to config file at '{}'"
                 .format(config_file_path), file=sys.stderr)
         exit(0)
+
+    if args.chats:
+        chats = tgn.registered_chats
+        print("Currently registered chats:", file=sys.stderr)
+        for chat_id, name in chats.items():
+            print("  {}: {}".format(chat_id, name), file=sys.stderr)
+        exit(0)
+
+    if args.clear:
+        tgn.registered_chats = {}
+        tgn.store_config()
+        print("Updated chats were written to config file at '{}'"
+                .format(config_file_path), file=sys.stderr)
+        exit(0)
+
+
 
     msg = "\n".join(args.msg)
     tgn.broadcast_host(msg, notify=(not args.mute))

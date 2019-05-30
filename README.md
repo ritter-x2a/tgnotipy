@@ -26,7 +26,8 @@ Next, make all these accounts known to your installation:
 ./tgnoti.py --find
 ```
 This command will provide a list with all found chats that will be notified. You can repeat this step at any time to add new chats.
-These chats are stored in the config file, you can manage them there.
+The currently registered chats can be listed with the `--chats` argument and cleared with the `--clear` argument.
+The registered chats are stored in the config file, more fine-grained management can be done by editing them in there.
 
 Lastly, try it out:
 ```
@@ -34,7 +35,7 @@ Lastly, try it out:
 ```
 This should send messages to all registered chats. You can send messages without ringing notification with the `--mute` flag.
 
-Optionally: Add convenient shell bindings (e.g. to your .zshrc):
+Optionally: Add convenient shell bindings (e.g. to your `.zshrc`):
 ```
 TGNOTIPY=/path/to/tgnoti.py
 function tgn { $TGNOTIPY "Start executing" "\`\`\`" "$*" "\`\`\`"; $* ; $TGNOTIPY "Done executing" "\`\`\`" "$*" "\`\`\`" "return code: \`$?\`" }
