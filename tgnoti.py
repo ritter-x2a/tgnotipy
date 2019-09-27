@@ -7,12 +7,18 @@ import socket
 import sys
 
 def get_config_file_path(config_file_path):
-    prog_name = "tgnotipy"
-    config_file_name = "config.json"
     if config_file_path is None:
-        from xdg import BaseDirectory
-        config_path = BaseDirectory.save_config_path(prog_name)
+        prog_name = "tgnotipy"
+        config_file_name = "config.json"
+        try:
+            # If the xdg module is available, try use the xdg config path...
+            from xdg import BaseDirectory
+            config_path = BaseDirectory.save_config_path(prog_name)
+        except ModuleNotFoundError:
+            # ...otherwise, use the location of this script.
+            config_path = os.path.dirname(os.path.realpath(__file__))
         config_file_path = os.path.join(config_path, config_file_name)
+
     return config_file_path
 
 class TGException(Exception):
@@ -29,7 +35,7 @@ class TGNotifier:
         self.registered_chats = registered_chats
 
     @staticmethod
-    def create(self, config_file_path=None):
+    def create(config_file_path=None):
         config_file_path = get_config_file_path(config_file_path)
         with open(config_file_path, 'r') as config_file:
             config = json.load(config_file)
@@ -96,8 +102,12 @@ class TGNotifier:
                 num_failure += 1
             else:
                 num_success += 1
-        print("Done sending messages, {} successful, {} failed."
-                .format(num_success, num_failure), file=sys.stderr)
+        if num_failure > 0:
+            print("Done sending messages, {} successful, {} failed."
+                    .format(num_success, num_failure), file=sys.stderr)
+        else:
+            print("Done sending {} message{}."
+                    .format(num_success, "s" if num_success != 1 else ""), file=sys.stderr)
 
     def add_recent_chats(self):
         new_chats = self.get_recent_chats()
