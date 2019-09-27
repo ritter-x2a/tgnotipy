@@ -18,7 +18,8 @@ First, create a config file for your API key on your system:
 ```
 ./tgnoti.py --newconfig <API_KEY>
 ```
-By default, the config file will be placed in a subfolder of your `XDG_CONFIG_BASE` folder. You can use the `--config <CFG>` command line argument to override this choice. (in this case, the `--config <CFG>` argument has to be provided in every future use of the script!)
+The config file is a simple, human-readable and editable json file.
+By default, the config file will be placed in a subfolder of your `XDG_CONFIG_BASE` folder. You can use the `--config <CFG>` command line argument to override this choice. (In this case, the `--config <CFG>` argument has to be provided in every future use of the script!)
 
 Then, write a message to your telegram bot from every account that should be notified.
 Next, make all these accounts known to your installation:
