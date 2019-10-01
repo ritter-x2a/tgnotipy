@@ -34,6 +34,8 @@ class TGNotifier:
         # maps chat_ids to readable names
         self.registered_chats = registered_chats
 
+        self.report_results = False
+
     @staticmethod
     def create(config_file_path=None):
         config_file_path = get_config_file_path(config_file_path)
@@ -91,23 +93,30 @@ class TGNotifier:
         new_msg = '{msg}\n_from_ `{hostname}`'.format(msg=msg, hostname=hostname)
         self.send_msg(chat_id, new_msg, notify)
 
-    def broadcast_host(self, msg, notify=False):
+    def broadcast(self, msg, with_host=True, notify=False):
         num_success = 0
         num_failure = 0
         for chat_id, name in self.registered_chats.items():
             try:
-                self.send_host_msg(chat_id, msg, notify)
+                if with_host:
+                    self.send_host_msg(chat_id, msg, notify)
+                else:
+                    self.send_msg(chat_id, msg, notify)
             except TGException:
-                print("Failed to send message to {}!".format(name), file=sys.stderr)
+                if self.report_results:
+                    print("Failed to send message to {}!".format(name), file=sys.stderr)
                 num_failure += 1
             else:
                 num_success += 1
         if num_failure > 0:
-            print("Done sending messages, {} successful, {} failed."
+            if self.report_results:
+                print("Done sending messages, {} successful, {} failed."
                     .format(num_success, num_failure), file=sys.stderr)
         else:
-            print("Done sending {} message{}."
+            if self.report_results:
+                print("Done sending {} message{}."
                     .format(num_success, "s" if num_success != 1 else ""), file=sys.stderr)
+        return num_failure
 
     def add_recent_chats(self):
         new_chats = self.get_recent_chats()
@@ -162,6 +171,8 @@ def main():
                     help='instead of giving a notification, print the list of registered chats')
     parser.add_argument('-m', '--mute', action='store_true',
                     help='give a muted notification')
+    parser.add_argument('-s', '--stats', action='store_true',
+                    help='print sending statistics')
     args = parser.parse_args()
 
     config_file_path = get_config_file_path(args.config)
@@ -178,6 +189,7 @@ def main():
         exit(1)
 
     tgn = TGNotifier.create(config_file_path)
+    tgn.report_results = args.stats
 
     if args.find:
         new_chats = tgn.add_recent_chats()
@@ -213,7 +225,7 @@ def main():
 
 
     msg = "\n".join(args.msg)
-    tgn.broadcast_host(msg, notify=(not args.mute))
+    tgn.broadcast(msg, with_host=True, notify=(not args.mute))
 
 
 if __name__ == "__main__":
