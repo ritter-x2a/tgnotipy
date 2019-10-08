@@ -59,10 +59,13 @@ class TGNotifier:
 
     def get(self, method, data=None):
         full_url = self.bot_url + '/' + method
-        if data is None:
-            res = requests.get(full_url)
-        else:
-            res = requests.get(full_url, data=data)
+        try:
+            if data is None:
+                res = requests.get(full_url)
+            else:
+                res = requests.get(full_url, data=data)
+        except:
+            raise TGException("Request failed critically (no internet?)")
         if res.status_code != 200:
             raise TGException("Request failed with status code {}"
                     .format(res.status_code))
@@ -70,10 +73,13 @@ class TGNotifier:
 
     def post(self, method, data=None):
         full_url = self.bot_url + '/' + method
-        if data is None:
-            res = requests.post(full_url)
-        else:
-            res = requests.post(full_url, data=data)
+        try:
+            if data is None:
+                res = requests.post(full_url)
+            else:
+                res = requests.post(full_url, data=data)
+        except:
+            raise TGException("Request failed critically (no internet?)")
         if res.status_code != 200:
             raise TGException("Request failed with status code {}"
                     .format(res.status_code))
