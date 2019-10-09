@@ -81,8 +81,8 @@ class TGNotifier:
         except:
             raise TGException("Request failed critically (no internet?)")
         if res.status_code != 200:
-            raise TGException("Request failed with status code {}"
-                    .format(res.status_code))
+            raise TGException("Request failed with status code {}{}"
+                    .format(res.status_code, " (illformed message?)" if res.status_code == 400 else ""))
         return res.json()
 
     def send_msg(self, chat_id, msg, notify=True):
@@ -111,7 +111,7 @@ class TGNotifier:
             except TGException as e:
                 if self.report_results:
                     print("Failed to send message to {}!".format(name), file=sys.stderr)
-                    print("Reason: {}!".format(e, file=sys.stderr))
+                    print("Reason: {}".format(e, file=sys.stderr))
                 num_failure += 1
             else:
                 num_success += 1
