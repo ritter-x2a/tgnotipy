@@ -108,9 +108,10 @@ class TGNotifier:
                     self.send_host_msg(chat_id, msg, notify)
                 else:
                     self.send_msg(chat_id, msg, notify)
-            except TGException:
+            except TGException as e:
                 if self.report_results:
                     print("Failed to send message to {}!".format(name), file=sys.stderr)
+                    print("Reason: {}!".format(e, file=sys.stderr))
                 num_failure += 1
             else:
                 num_success += 1
