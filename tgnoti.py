@@ -21,6 +21,19 @@ def get_config_file_path(config_file_path):
 
     return config_file_path
 
+def checked_get_request(full_url, data=None):
+    try:
+        if data is None:
+            res = requests.get(full_url)
+        else:
+            res = requests.get(full_url, data=data)
+    except:
+        raise TGException("Request failed critically (no internet?)")
+    if res.status_code != 200:
+        raise TGException("Request failed with status code {}"
+                .format(res.status_code))
+    return res
+
 class TGException(Exception):
     def __init__(self, msg):
         super().__init__(msg)
@@ -59,16 +72,7 @@ class TGNotifier:
 
     def get(self, method, data=None):
         full_url = self.bot_url + '/' + method
-        try:
-            if data is None:
-                res = requests.get(full_url)
-            else:
-                res = requests.get(full_url, data=data)
-        except:
-            raise TGException("Request failed critically (no internet?)")
-        if res.status_code != 200:
-            raise TGException("Request failed with status code {}"
-                    .format(res.status_code))
+        res = checked_get_request(full_url, data)
         return res.json()
 
     def post(self, method, data=None):
@@ -130,18 +134,56 @@ class TGNotifier:
         self.registered_chats.update(new_chats)
         return new_chats
 
-    def get_recent_chats(self):
+    def get_updates(self, limit=100, timeout=0, allowed_updates=['messages']):
         payload = {
                 'offset': self.last_update_id + 1,
+                'limit': limit,
+                'timeout': timeout,
                 'allowed_updates': ['message'],
             }
         data = self.get("getUpdates", payload)
-        recent_chats = dict()
+        results = data["result"]
 
         new_last_update_id = self.last_update_id
-        for upd in data["result"]:
+        for upd in results:
             curr_id = upd['update_id']
             new_last_update_id = max(new_last_update_id, curr_id)
+
+        self.last_update_id = new_last_update_id
+
+        # Mark these updates as received to the server
+        payload['offset'] = new_last_update_id + 1
+        self.get("getUpdates", payload)
+
+        return results
+
+    def download_photo_from_msg(self, msg, path):
+        photo_sizes = msg.get("photo", None)
+        assert photo_sizes is not None
+        height = -1
+        width = -1
+        file_id = None
+        for ps in photo_sizes:
+            if ps["width"] > width:
+                file_id = ps["file_id"]
+                width = ps["width"]
+                height = ps["height"]
+
+        file_obj = self.get("getFile", {"file_id": file_id})["result"]
+        file_path = file_obj["file_path"]
+        ext = os.path.splitext(file_path)[1]
+        dl_url = "https://api.telegram.org/file/bot{token}/{file_path}".format(token=self.api_key, file_path=file_path)
+        r = checked_get_request(dl_url)
+        full_path = path + ext
+        with open(full_path, "wb") as outfile:
+            outfile.write(r.content)
+        return full_path
+
+    def get_recent_chats(self):
+        updates = self.get_updates(allowed_updates=['message'])
+        recent_chats = dict()
+
+        for upd in updates:
             msg = upd['message']
             chat = msg['chat']
             chat_id = chat['id']
@@ -151,12 +193,6 @@ class TGNotifier:
                     chat.get('username', '<no username>'),
                 )
             recent_chats[chat_id] = chat_name
-
-        self.last_update_id = new_last_update_id
-
-        # Mark these updates as received to the server
-        payload['offset'] = new_last_update_id + 1
-        self.get("getUpdates", payload)
 
         return recent_chats
 
