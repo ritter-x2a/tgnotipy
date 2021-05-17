@@ -6,6 +6,9 @@ import requests
 import socket
 import sys
 
+import logging
+logger = logging.getLogger(__name__)
+
 def get_config_file_path(config_file_path):
     """ Obtain the appropriate path to the config file.
 
@@ -45,9 +48,9 @@ def get_config_file_path(config_file_path):
             pass
 
         if is_config_at_xdg and is_config_at_script:
-            print("Warning: Found two config files:\n  {}\nand\n  {}\n" .format(
+            logger.warning("Found two config files:\n  {}\nand\n  {}\n" .format(
                     config_at_xdg_path, config_at_script_path)
-                + "The latter is used. Delete it or explicitly specify the config to use the other one.", file=sys.stderr)
+                + "The latter is used. Delete it or explicitly specify the config to use the other one.")
             config_file_path = config_at_script_path
         elif is_config_at_script:
             config_file_path = config_at_script_path
@@ -87,13 +90,15 @@ class TGNotifier:
         # maps chat_ids to readable names
         self.registered_chats = registered_chats
 
-        self.report_results = False
-
     @staticmethod
     def create(config_file_path=None):
         config_file_path = get_config_file_path(config_file_path)
-        with open(config_file_path, 'r') as config_file:
-            config = json.load(config_file)
+        logger.debug("Using config file at '{}'".format(config_file_path))
+        try:
+            with open(config_file_path, 'r') as config_file:
+                config = json.load(config_file)
+        except FileNotFoundError as e:
+            raise TGException("No config file found at '{}'!".format(config_file_path))
         if 'api_key' not in config.keys():
             raise TGException("Incomplete config file!")
         if 'registered_chats' not in config.keys():
@@ -147,26 +152,21 @@ class TGNotifier:
         num_success = 0
         num_failure = 0
         for chat_id, name in self.registered_chats.items():
+            logger.debug("Sending message to '{}'".format(name))
             try:
                 if with_host:
                     self.send_host_msg(chat_id, msg, notify)
                 else:
                     self.send_msg(chat_id, msg, notify)
             except TGException as e:
-                if self.report_results:
-                    print("Failed to send message to {}!".format(name), file=sys.stderr)
-                    print("Reason: {}".format(e, file=sys.stderr))
+                logger.error("Failed to send message to {}!\nReason: {}".format(name, e))
                 num_failure += 1
             else:
                 num_success += 1
         if num_failure > 0:
-            if self.report_results:
-                print("Done sending messages, {} successful, {} failed."
-                    .format(num_success, num_failure), file=sys.stderr)
+            logger.info("Done sending messages, {} successful, {} failed.".format(num_success, num_failure))
         else:
-            if self.report_results:
-                print("Done sending {} message{}."
-                    .format(num_success, "s" if num_success != 1 else ""), file=sys.stderr)
+            logger.info("Done sending {} message{}." .format(num_success, "s" if num_success != 1 else ""))
         return num_failure
 
     def add_recent_chats(self):
@@ -237,6 +237,33 @@ class TGNotifier:
         return recent_chats
 
 
+def init_logging(loglevel, logfile=None):
+    numeric_level = getattr(logging, loglevel.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: {}'.format(loglevel))
+    kwargs = {
+            "format": '%(asctime)s - %(levelname)s:%(name)s: %(message)s',
+            "level": numeric_level,
+        }
+
+    if logfile is not None:
+        kwargs["filename"] = logfile
+
+    logging.basicConfig(**kwargs)
+
+def parse_args_with_logging(argparser, default_loglevel="warning"):
+    loglevels = ["debug", "info", "warning", "error"]
+    argparser.add_argument("-l", "--loglevel", choices=loglevels, default=default_loglevel,
+            help="configures the amount of logging information to print")
+    argparser.add_argument("--logfile", default=None,
+            help="print logs to this file, stdout if none is given")
+
+    args = argparser.parse_args()
+
+    init_logging(args.loglevel, args.logfile)
+
+    return args
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description='Telegram Bot Notifier')
@@ -254,9 +281,8 @@ def main():
                     help='instead of giving a notification, print the list of registered chats')
     parser.add_argument('-m', '--mute', action='store_true',
                     help='give a muted notification')
-    parser.add_argument('-s', '--stats', action='store_true',
-                    help='print sending statistics')
-    args = parser.parse_args()
+
+    args = parse_args_with_logging(parser, default_loglevel="warning")
 
     config_file_path = get_config_file_path(args.config)
 
@@ -272,7 +298,6 @@ def main():
         exit(1)
 
     tgn = TGNotifier.create(config_file_path)
-    tgn.report_results = args.stats
 
     if args.find:
         new_chats = tgn.add_recent_chats()
