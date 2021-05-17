@@ -7,17 +7,57 @@ import socket
 import sys
 
 def get_config_file_path(config_file_path):
+    """ Obtain the appropriate path to the config file.
+
+    If config_file_path is not None, it will just be returned.
+
+    Otherwise, either the path of a file named "config.json" located in the
+    same directory as this script or the path to a config.json file at a
+    location specified by the xdg module will be returned according to the
+    following rules:
+      - If both files exist, the the one next to the script is used.
+      - If only one of the files exist (including if no xdg module and
+        therefore no correspoding path is available), the path to the existing
+        one is used.
+      - If at both locations there is no config file, and the xdg module is
+        available, the path at the xdg location will be used.
+      - Otherwise, if there are no config files to be found and no xdg module
+        is available, the path of the config in the script directory is
+        returned.
+    """
     if config_file_path is None:
-        prog_name = "tgnotipy"
         config_file_name = "config.json"
+        prog_name = "tgnotipy"
+
+        script_path = os.path.dirname(os.path.realpath(__file__))
+        config_at_script_path = os.path.join(script_path, config_file_name)
+        is_config_at_script = os.path.isfile(config_at_script_path)
+
+        # If the xdg module is available, try use the xdg config path
+        config_at_xdg_path = None
+        is_config_at_xdg = False
         try:
-            # If the xdg module is available, try use the xdg config path...
             from xdg import BaseDirectory
-            config_path = BaseDirectory.save_config_path(prog_name)
+            xdg_path = BaseDirectory.save_config_path(prog_name)
+            config_at_xdg_path = os.path.join(xdg_path, config_file_name)
+            is_config_at_xdg = os.path.isfile(config_at_xdg_path)
         except ModuleNotFoundError:
-            # ...otherwise, use the location of this script.
-            config_path = os.path.dirname(os.path.realpath(__file__))
-        config_file_path = os.path.join(config_path, config_file_name)
+            pass
+
+        if is_config_at_xdg and is_config_at_script:
+            print("Warning: Found two config files:\n  {}\nand\n  {}\n" .format(
+                    config_at_xdg_path, config_at_script_path)
+                + "The latter is used. Delete it or explicitly specify the config to use the other one.", file=sys.stderr)
+            config_file_path = config_at_script_path
+        elif is_config_at_script:
+            config_file_path = config_at_script_path
+        elif is_config_at_xdg:
+            config_file_path = config_at_xdg_path
+        else:
+            if config_at_xdg_path is not None:
+                config_file_path = config_at_xdg_path
+            else:
+                config_file_path = config_at_script_path
 
     return config_file_path
 
