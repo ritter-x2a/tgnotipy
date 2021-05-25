@@ -18,7 +18,7 @@ def get_config_file_path(config_file_path):
     same directory as this script or the path to a config.json file at a
     location specified by the xdg module will be returned according to the
     following rules:
-      - If both files exist, the the one next to the script is used.
+      - If both files exist, the one next to the script is used.
       - If only one of the files exist (including if no xdg module and
         therefore no correspoding path is available), the path to the existing
         one is used.
