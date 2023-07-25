@@ -42,6 +42,19 @@ TGNOTIPY=/path/to/tgnoti.py
 function tgn { $TGNOTIPY "Start executing" "\`\`\`" "$*" "\`\`\`"; $* ; $TGNOTIPY "Done executing" "\`\`\`" "$*" "\`\`\`" "return code: \`$?\`" }
 ```
 
+You might need to truncate excessively long commands:
+```
+TGNOTIPY=/path/to/tgnoti.py
+function tgn {
+    CMD="$*"
+    TRUNC_CMD="$*"
+    if [ ${#CMD} -gt 1500 ]; then
+        TRUNC_CMD="${CMD:0:1500}..."
+    fi
+    $TGNOTIPY "Start executing" "\`\`\`" "$TRUNC_CMD" "\`\`\`"; $CMD ; $TGNOTIPY "Done executing" "\`\`\`" "$TRUNC_CMD" "\`\`\`" "return code: \`$?\`"
+}
+```
+
 
 ## Ideas
 Python scripts could use the tgnoti.py module to give more fine-grained information about progress.
